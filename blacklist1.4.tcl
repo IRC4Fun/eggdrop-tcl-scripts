@@ -294,7 +294,7 @@ proc bl:list {hand idx arg} {
   set c 1
   foreach blnick $BLNicks {
    if {$blnick != ""} {
-    putlog "\[\002$c\002\] - \002Mask\002: [lindex [split $blnick] 0] - \002Requester\002: [lindex [split $blnick] 1] - \002Bantime\002: [lindex [split $blnick] end]"
+    putlog "\[\002$c\002\] - \002Mask\002: [lindex [split $blnick] 0] - \002Requester\002: [lindex [split $blnick] 1] - \002Bantime\002: [lindex [split $blnick] end] -- \002Reason\002: [join [lrange [split $blnick] 2 end-1]]"
     incr c
    } {
     putlog "\[\002*\002\] - End of list."
