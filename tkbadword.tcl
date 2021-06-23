@@ -4,10 +4,12 @@
 # e-mail:  tomekk/@/oswiecim/./eu/./org 
 # home page: http://tomekk.oswiecim.eu.org/ 
 # 
-# Version 0.2
+# Version 0.10
 # 
 # This file is Copyrighted under the GNU Public License. 
 # http://www.gnu.org/copyleft/gpl.html 
+
+# ****** please delete old 'banned hosts file', there is a small change in 0.10 (neeed for ban on-join-restoration) ******
 
 # if you need utf-8 support, please read this -> http://eggwiki.org/Utf-8
 
@@ -349,10 +351,12 @@ proc word_fct { nick uhost hand chan arg } {
 			set user_ban_mask [banmask $uhost $nick]
 
 			if {$waitb == 0} {
-                                putserv "PRIVMSG Uworld2 :AKILL ADD $nick !T 7d Spam is off-topic on IRC4Fun"
-                                putserv "PRIVMSG X :BAN $chan $nick 30d 75 Spam"
-								putquick "MODE $chan +b $user_ban_mask"
-								putserv "PRIVMSG #Opers :*** \002Warning\002 SpamTrap activated by $nick ($user_ban_mask) in \002$chan\002"
+				putserv "KILL $nick :Spam is off-topic on IRC4Fun"
+				putserv "GLINE +$user_ban_mask * 3600 :Banned for spamming. If in error, contact Help@IRC4Fun.net"
+				putserv "PRIVMSG Uworld2 :GLINE ADD $user_ban_mask !T 14d Banned for spamming. If in error, contact Help@IRC4Fun.net with GID#."
+#				putserv "PRIVMSG X :BAN $chan $nick 30d 75 Spam"
+#				putquick "MODE $chan +b $user_ban_mask"
+				putserv "PRIVMSG #Opers :*** \002Warning\002 SpamTrap activated by $nick ($user_ban_mask) in \002$chan\002"
 
 				add_new_bnd_host "$chan&$uhost&$time_in_seconds&$user_ban_mask"
 
@@ -380,10 +384,13 @@ proc word_fct { nick uhost hand chan arg } {
 
 						if {$uhost == $ident} {				
 							if {$overall >= $waitb} {
-				                                putserv "PRIVMSG Uworld2 :AKILL ADD $nick !T 7d Spam is off-topic on IRC4Fun"
-                                				putserv "PRIVMSG X :BAN $chan $nick 7d 75 Spam"
-												putquick "MODE $chan +b $user_ban_mask"
-												putserv "PRIVMSG #Opers :*** \002Warning\002 SpamTrap activated by $nick ($user_ban_mask) in \002$chan\002"
+				                                putserv "KILL $nick :Spam is off-topic on IRC4Fun"
+                                				putserv "GLINE +$user_ban_mask * 3600 :Banned for spamming. If in error, contact Help@IRC4Fun.net"
+                                				putserv "PRIVMSG Uworld2 :GLINE ADD $user_ban_mask !T 14d Banned for spamming. If in error, contact Help@IRC4Fun.net with GID#."
+#								putserv "PRIVMSG Uworld2 :AKILL ADD $nick !T 7d Spam is off-topic on IRC4Fun"
+#                                				putserv "PRIVMSG X :BAN $chan $nick 30d 75 Spam"
+#								putquick "MODE $chan +b $user_ban_mask"
+								putserv "PRIVMSG #Opers :*** \002Warning\002 SpamTrap activated by $nick ($user_ban_mask) in \002$chan\002"
 
 								add_new_bnd_host "$chan&$uhost&$time_in_seconds&$user_ban_mask"
 
@@ -649,9 +656,10 @@ proc nick_join { nick uhost hand chan  } {
 				if {$chan == $bn_user_chan} {
 					set actual_ban_mask [banmask $uhost $nick]
 
-						putserv "PRIVMSG X :BAN $chan $nick 30d 75 Spam"
-						putquick "MODE $chan +b $actual_ban_mask"
-						putkick $chan $nick $bmsg
+	                                #putserv "PRIVMSG Uworld2 :AKILL ADD $nick !T 7d Spam is off-topic on IRC4Fun"
+					putserv "PRIVMSG X :BAN $chan $nick 30d 75 Spam"
+					putquick "MODE $chan +b $actual_ban_mask"
+					putkick $chan $nick $bmsg
 
 					# update ban mask (someone could change it in script between joins)
 					bnd_host_mask_update $chan $uhost $actual_ban_mask
@@ -693,5 +701,5 @@ if {[string match *words_reload_timer* [timers]] != 1} {
 	timer $reload_words_db_every words_reload_timer
 }
 
-putlog "tkbadword.tcl (v0.2 by tomekk & siniStar) loaded"
+putlog "tkbadword.tcl (v0.11 by tomekk & siniStar) loaded"
 
