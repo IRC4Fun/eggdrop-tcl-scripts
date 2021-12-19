@@ -1,9 +1,10 @@
 #############################################################################
 #                                                                           #
-# Coded by: Opposing (Fz_Egg@yahoo.com)                                     #
-# Version : 1.4                                                             #
+# Modified for use on IRC4Fun, by: siniStar (siniStar@IRC4Fun.net)          #
+# Originally coded by: Opposing (Fz_Egg@yahoo.com)                          #
+# Version : 1.4.2                                                           #
+# New Release: December 19, 2021                                            #
 # Released: November 29, 2010                                               #
-# Source  : http://Sir-Fz.blogspot.com/                                     #
 ##                                                                          #
 # Description: A blacklist script that stores the banned masks in a db file #
 #              and bans everyone who matches the blacklisted masks on join  #
@@ -25,6 +26,8 @@
 #         Also used user's (egghelp.org forum) maskhost proc.               #
 #                                                                           #
 # History:                                                                  #
+#         - 1.4.2: Configured script to use ChanServ (Anope) for KICKS&Bans #
+#         - 1.4.1: Configured script to use X (GNUworld) for KICKS & Bans   #
 #         - 1.4: Fixed a bug when using the bansame option where nicknames  #
 #           with special characters (\, [, ]) were not properly banned.     #
 #         - 1.3: Added Flooding out protection, where the bot will start    #
@@ -39,7 +42,7 @@
 #                                                                           #
 # Report bugs/suggestions to Fz_Egg@yahoo.com                               #
 #                                                                           #
-# Copyright © 2005 Opposing (aka Sir_Fz)                                    #
+# Copyright ï¿½ 2005 Opposing (aka Sir_Fz)                                    #
 #                                                                           #
 # This program is free software; you can redistribute it and/or modify      #
 # it under the terms of the GNU General Public License as published by      #
@@ -73,7 +76,7 @@ set blackl(punish) 4:2
 set blackl(checkop) 0
 
 ## Do you want to ban the same ban from the blacklist file
-## or do you want it to be spcific ? (0: specific / 1: same ban as the file) 
+## or do you want it to be spcific ? (0: specific / 1: same ban as the file)
 ### example:
 ## Suppose that *!lamest@* is banned.
 # .. joins lamer!lamest@lamer.org
@@ -85,15 +88,15 @@ set blackl(bansame) 0
 
 ## if blackl(bansame) is set to 0:
 ## What ban type do you want to ban ?
-# 0: *!user@full.host.tld 
-# 1: *!*user@full.host.tld 
-# 2: *!*@full.host.tld 
-# 3: *!*user@*.host.tld 
-# 4: *!*@*.host.tld 
-# 5: nick!user@full.host.tld 
-# 6: nick!*user@full.host.tld 
-# 7: nick!*@full.host.tld 
-# 8: nick!*user@*.host.tld 
+# 0: *!user@full.host.tld
+# 1: *!*user@full.host.tld
+# 2: *!*@full.host.tld
+# 3: *!*user@*.host.tld
+# 4: *!*@*.host.tld
+# 5: nick!user@full.host.tld
+# 6: nick!*user@full.host.tld
+# 7: nick!*@full.host.tld
+# 8: nick!*user@*.host.tld
 # 9: nick!*@*.host.tld
 set blackl(btype) 2
 
@@ -146,9 +149,9 @@ proc bl:ban {nick uhost hand chan} {
  if {![info exists blflood([set chan [string tolower $chan]])]} { set blflood($chan) 0 }
  foreach blnick $BLNicks {
   if {[string match -nocase [set ban [lindex [split $blnick] 0]] $nick!$uhost]} {
-   set ban [string map {\\\\ \\ \\\[ \[ \\\] \]} $ban] 
+   set ban [string map {\\\\ \\ \\\[ \[ \\\] \]} $ban]
    if {[blfollow $blackl(secs) blflood($chan)] < $blackl(lim)} {
-    putquick "KICK $chan $nick :[string map [list %requester [lindex [split $blnick] 1]] [join [lrange [split $blnick] 2 end-1]]]"
+    putquick "PRIVMSG ChanServ :BAN $chan +4h $nick [string map [list %requester [lindex [split $blnick] 1]] [join [lrange [split $blnick] 2 end-1]]]"
     if {$blackl(bansame)} {
      putquick "MODE $chan -o+b $nick $ban"
      if {!([set btime [lindex [split $blnick] end]] <= 0)} {
@@ -161,7 +164,7 @@ proc bl:ban {nick uhost hand chan} {
      }
     }
    } {
-    puthelp "KICK $chan $nick :[string map [list %requester [lindex [split $blnick] 1]] [join [lrange [split $blnick] 2 end-1]]]"
+    putquick "PRIVMSG ChanServ :BAN $chan +4h [set aban [blbtype $nick!$uhost $blackl(btype)]] [string map [list %requester [lindex [split $blnick] 1]] [join [lrange [split $blnick] 2 end-1]]]"
     if {$blackl(bansame)} {
      pushmode $chan -o $nick
      pushmode $chan +b $ban
@@ -224,7 +227,7 @@ proc bl:do:add {hand arg} {
   set kreason "$blackl(kmsg)"
   set btime "$blackl(btime)"
  }
- if {![file exists $blackl(file)]} { 
+ if {![file exists $blackl(file)]} {
   set temp [open $blackl(file) w]
   close $temp
  }
@@ -240,7 +243,7 @@ proc bl:do:add {hand arg} {
 
 proc bl:rem {hand idx arg} {
  if {$arg == ""} { putlog "SYNTAX: \003.rembl <nick!user@host>\003"; return 0 }
- if {![string match -nocase *!*@* [set blnick [lindex [split $arg] 0]]]} { 
+ if {![string match -nocase *!*@* [set blnick [lindex [split $arg] 0]]]} {
   putlog "SYNTAX: \003.rembl \002<nick>\002!\002<user>\002@\002<host>\002\003"
   return 0
  }
@@ -263,7 +266,7 @@ proc bl:do:rem arg {
  global blackl BLNicks
  set remmed 0
  set blnick [lindex [split $arg] 0]
- if {![file exists $blackl(file)]} { 
+ if {![file exists $blackl(file)]} {
   set temp [open $blackl(file) w]
   close $temp
  }
@@ -326,7 +329,7 @@ proc bl:pub {nick uhost hand chan arg} {
   }
   "rembl" {
    if {[join [lrange [split $arg] 1 end]] == ""} { puthelp "NOTICE $nick :SYNTAX: \003$blackl(trig)rembl <nick!user@host>\003"; return 0 }
-   if {![string match -nocase *!*@* [set blnick [lindex [split $arg] 1]]]} { 
+   if {![string match -nocase *!*@* [set blnick [lindex [split $arg] 1]]]} {
     puthelp "NOTICE $nick :SYNTAX: \003$blackl(trig)rembl \002<nick>\002!\002<user>\002@\002<host>\002\003"
     return 0
    }
@@ -384,7 +387,7 @@ proc we:can:find:ban {blnick type} {
  global blackl
  set spfound 0
  switch -- $type {
-  "add" { 
+  "add" {
    foreach temp [split [string tolower [read [set inf [open $blackl(file)]]]] "\n"][close $inf] {
     if {[string equal -nocase [lindex [split $temp] 0] $blnick]} { set spfound 1 ; break }
    }
@@ -413,26 +416,26 @@ proc bldicr blvar {
 
 set blbtypeDefaultType 3
 
-proc blbtype [list name [list type $blbtypeDefaultType]] { 
- if {[scan $name {%[^!]!%[^@]@%s} nick user host]!=3} { 
-  error "Usage: maskbhost <nick!user@host> \[type\]" 
- } 
- if [string match {[3489]} $type] { 
-  if [string match {*[0-9]} $host] { 
-   set host [join [lrange [split $host .] 0 2] .].* 
-  } elseif {[string match *.*.* $host]} { 
-   set host *.[join [lrange [split $host .] end-1 end] .] 
-  } 
- } 
- if [string match {[1368]} $type] { 
-  set user *[string trimleft $user ~] 
- } elseif {[string match {[2479]} $type]} { 
-  set user * 
- } 
- if [string match {[01234]} $type] { 
-  set nick * 
- } 
- set name $nick!$user@$host 
+proc blbtype [list name [list type $blbtypeDefaultType]] {
+ if {[scan $name {%[^!]!%[^@]@%s} nick user host]!=3} {
+  error "Usage: maskbhost <nick!user@host> \[type\]"
+ }
+ if [string match {[3489]} $type] {
+  if [string match {*[0-9]} $host] {
+   set host [join [lrange [split $host .] 0 2] .].*
+  } elseif {[string match *.*.* $host]} {
+   set host *.[join [lrange [split $host .] end-1 end] .]
+  }
+ }
+ if [string match {[1368]} $type] {
+  set user *[string trimleft $user ~]
+ } elseif {[string match {[2479]} $type]} {
+  set user *
+ }
+ if [string match {[01234]} $type] {
+  set nick *
+ }
+ set name $nick!$user@$host
 }
 
 putlog "BlackList v1.4 By Opposing (a.k.a Sir_Fz) Loaded..."
